@@ -3,272 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>▣ QRGB ULTRA - Pro Engine v4.5 PRO</title>
+    <title>QRGB ULTRA PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
-        canvas { image-rendering: pixelated; }
-        textarea { background: #0a0a0a; border: 1px solid #333; color: #fff; font-family: monospace; resize: none; transition: all 0.3s; }
-        textarea:focus { border-color: #666; background: #111; }
-        
-        .logo-q { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.6); }
-        .logo-r { color: #FF004D; text-shadow: 0 0 10px #FF004D; }
-        .logo-g { color: #00FF41; text-shadow: 0 0 10px #00FF41; }
-        .logo-b { color: #0088FF; text-shadow: 0 0 10px #0088FF; }
-
-        .scan-line { 
-            position:absolute; left:0; right:0; height:3px; 
-            background:linear-gradient(90deg,transparent,#00ff41,transparent); 
-            box-shadow:0 0 20px #00ff41; 
-            top: 0; z-index: 10; display: none;
+        :root {
+            --r-color: #FF004D;
+            --g-color: #00FF41;
+            --b-color: #0088FF;
+            --bg-color: #050505;
         }
+        
+        body { 
+            background: var(--bg-color); 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden;
+            transition: background 0.5s;
+        }
+        
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        /* --- Input Styling --- */
+        textarea {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            resize: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+        textarea:focus { 
+            outline: none; 
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(30, 30, 30, 0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        /* --- Logo Colors --- */
+        .logo-q { color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.8); }
+        .logo-r { color: var(--r-color); text-shadow: 0 0 15px var(--r-color); }
+        .logo-g { color: var(--g-color); text-shadow: 0 0 15px var(--g-color); }
+        .logo-b { color: var(--b-color); text-shadow: 0 0 15px var(--b-color); }
+
+        /* --- Scan Animations --- */
+        .scan-line { 
+            position: absolute; left: 0; right: 0; height: 2px; 
+            background: linear-gradient(90deg, transparent, var(--g-color), transparent); 
+            box-shadow: 0 0 15px var(--g-color); 
+            top: 0; z-index: 20;
+            opacity: 0;
+            display: none;
+        }
+        
         .scan-active .scan-line {
             display: block;
-            animation: scanLine 2.5s linear forwards;
+            opacity: 1;
+            animation: scanMove 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
-        @keyframes scanLine { 0%{top:0%;} 100%{top:100%;} }
         
-        @keyframes flash { 0%,100%{opacity:0} 50%{opacity:.9} }
-        .flash { animation:flash .3s; }
+        @keyframes scanMove { 
+            0% { top: 0%; opacity: 1; } 
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; } 
+        }
         
-        .indicator { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
-        .active-r { background: #ff004d; box-shadow: 0 0 10px #ff004d; }
-        .active-g { background: #00ff41; box-shadow: 0 0 10px #00ff41; }
-        .active-b { background: #0088ff; box-shadow: 0 0 10px #0088ff; }
+        @keyframes flash { 
+            0% { opacity: 0; } 
+            20% { opacity: 0.9; } 
+            100% { opacity: 0; } 
+        }
+        .flash-anim { animation: flash 0.4s ease-out; }
+
+        /* --- Result Indicators --- */
+        .indicator { 
+            width: 10px; height: 10px; border-radius: 50%; 
+            background: #222; 
+            transition: all 0.3s; 
+        }
+        .active-r { background: var(--r-color); box-shadow: 0 0 12px var(--r-color); }
+        .active-g { background: var(--g-color); box-shadow: 0 0 12px var(--g-color); }
+        .active-b { background: var(--b-color); box-shadow: 0 0 12px var(--b-color); }
         
-        .dropdown-menu { transform: translateY(-10px); opacity: 0; visibility: hidden; transition: all 0.2s ease; }
+        /* --- Dropdown --- */
+        .dropdown-menu { 
+            transform: translateY(-10px); opacity: 0; visibility: hidden; 
+            transition: all 0.2s ease; 
+        }
         .dropdown-menu.show { transform: translateY(0); opacity: 1; visibility: visible; }
         
-        .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
+        /* --- Modal --- */
+        .modal-overlay { 
+            opacity: 0; visibility: hidden; transition: all 0.3s ease; 
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); 
+        }
         .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-content { transform: scale(0.9); transition: transform 0.3s ease; }
+        .modal-content { transform: scale(0.95); transition: transform 0.3s ease; }
         .modal-overlay.show .modal-content { transform: scale(1); }
 
-        .lang-switch { display: flex; gap: 2px; background: #1a1a1a; padding: 2px; border-radius: 6px; font-size: 10px; font-weight: 700; }
-        .lang-btn { padding: 4px 6px; border-radius: 4px; cursor: pointer; opacity: 0.5; transition: all 0.2s; }
-        .lang-btn.active { opacity: 1; background: #333; color: #fff; }
-
-        /* --- НОВЫЕ СТИЛИ ФАСАДА --- */
-        .main-layout {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            flex: 1;
-        }
-
-        /* Порядок элементов через flexbox (визуально кнопки сверху, контейнер снизу) */
-        #central-container { order: 2; }
-        .btn-group-wrapper { order: 1; }
-
-        /* Состояние по умолчанию для центрального контейнера */
-        #central-container {
-            width: 280px;
-            height: 280px;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                        height 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                        margin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Расширение и сдвиг при активации сканера */
-        #central-container:has(> :not(.hidden):is(#video, #freeze-frame)) {
-            width: 340px;
-            height: 380px;
-            margin-top: 30px;
-            margin-bottom: 10px;
-        }
-
-        /* Плавное перемещение кнопок вниз при активации */
-        #central-container:has(> :not(.hidden):is(#video, #freeze-frame)) ~ .btn-group-wrapper {
-            transform: translateY(24px);
-        }
-
-        /* --- Рамка захвата --- */
-        .capture-frame-overlay {
+        /* --- Viewfinder Targeting --- */
+        .viewfinder-corners {
             position: absolute;
-            inset: 20px;
-            z-index: 20;
+            inset: 0;
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.4s ease 0.2s;
+            z-index: 15;
         }
-        #central-container:has(> :not(.hidden):is(#video, #freeze-frame)) .capture-frame-overlay {
-            opacity: 1;
-        }
-
-        .bracket {
+        .corner {
             position: absolute;
-            width: 28px;
-            height: 28px;
-            border-color: #00ff41;
-            border-style: solid;
-            border-width: 0;
-            filter: drop-shadow(0 0 4px rgba(0, 255, 65, 0.6));
+            width: 20px;
+            height: 20px;
+            border-color: rgba(255,255,255,0.5);
+            transition: all 0.3s;
         }
-        .top-left { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 10px; }
-        .top-right { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 10px; }
-        .bottom-left { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 10px; }
-        .bottom-right { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 10px; }
+        .tl { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; border-radius: 8px 0 0 0; }
+        .tr { top: 0; right: 0; border-top: 3px solid; border-right: 3px solid; border-radius: 0 8px 0 0; }
+        .bl { bottom: 0; left: 0; border-bottom: 3px solid; border-left: 3px solid; border-radius: 0 0 0 8px; }
+        .br { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; border-radius: 0 0 8px 0; }
+        
+        /* Targeting Active State */
+        .targeting .corner { border-color: var(--g-color); box-shadow: 0 0 10px var(--g-color); }
+        
+        /* --- UI State Management --- */
+        .mode-camera .input-section { transform: translateY(100%); opacity: 0; pointer-events: none; }
+        .mode-camera .central-block { height: 70vh; }
+        
+        .input-section {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .central-block {
+            transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-        /* --- Анимированная зеленая полоса --- */
-        .progress-path {
-            stroke-dasharray: 400; 
-            stroke-dashoffset: 400;
+        /* --- Buttons --- */
+        .btn-action {
+            background: linear-gradient(145deg, #222, #1a1a1a);
+            box-shadow: 5px 5px 15px #0a0a0a, -5px -5px 15px #1f1f1f;
+            transition: all 0.2s;
         }
-        #central-container:has(> :not(.hidden):is(#video, #freeze-frame)) .progress-path {
-            animation: drawBorder 3s linear infinite;
-        }
-        @keyframes drawBorder {
-            to { stroke-dashoffset: 0; }
-        }
+        .btn-action:active { transform: scale(0.96); box-shadow: inset 2px 2px 5px #000; }
 
-        /* --- Маленькая кнопка сохранения --- */
-        #save-btn {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            z-index: 30;
-            background: white;
-            color: black;
-            font-size: 10px;
-            font-weight: 800;
-            padding: 8px 16px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            opacity: 0;
-            transform: scale(0.8) translateY(10px);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-            letter-spacing: 0.08em;
-        }
-        #save-btn:active {
-            transform: scale(0.9) !important;
-        }
-        /* Переопределение скрытия через Tailwind класс, который использует JS */
-        #save-btn:not(.hidden) {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            pointer-events: auto;
-        }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-6">
+<body class="flex flex-col min-h-screen p-4 pb-6">
 
-    <div class="main-layout">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-4 relative z-50">
+        <div class="flex items-center gap-3">
+            <canvas id="mini-qr" width="32" height="32" class="rounded-lg bg-zinc-900/50 border border-white/10"></canvas>
+            <div class="flex flex-col">
+                <h1 class="text-2xl font-black tracking-tighter flex gap-0.5">
+                    <span class="logo-q">Q</span><span class="logo-r">R</span><span class="logo-g">G</span><span class="logo-b">B</span>
+                </h1>
+                <span class="text-[8px] text-zinc-500 font-mono tracking-widest">SPECTRAL ENGINE v4.5</span>
+            </div>
+        </div>
         
-        <div class="flex items-center justify-between mb-6 relative w-full">
-            <canvas id="mini-qr" width="44" height="44" class="rounded bg-zinc-900 border border-white/10"></canvas>
-            <h1 class="text-xl font-extrabold tracking-widest uppercase text-center flex-1 flex justify-center gap-0.5">
-                <span class="logo-q">Q</span><span class="logo-r">R</span><span class="logo-g">G</span><span class="logo-b">B</span>
-            </h1>
-            <div class="flex items-center gap-3 z-50">
-                <div class="lang-switch">
-                    <div id="lang-uk" class="lang-btn active" onclick="setLanguage('uk')">UK</div>
-                    <div id="lang-en" class="lang-btn" onclick="setLanguage('en')">EN</div>
-                </div>
-                <button id="menu-btn" class="w-10 text-white text-xl active:scale-90 transition-transform">☰</button>
+        <div class="flex items-center gap-2">
+            <div class="lang-switch flex gap-1 bg-zinc-900 p-1 rounded-lg border border-white/5">
+                <div id="lang-uk" class="lang-btn active text-[10px] font-bold px-2 py-1 rounded cursor-pointer" onclick="setLanguage('uk')">UK</div>
+                <div id="lang-en" class="lang-btn text-[10px] font-bold px-2 py-1 rounded cursor-pointer" onclick="setLanguage('en')">EN</div>
+            </div>
+            <button id="menu-btn" class="w-10 h-10 flex items-center justify-center text-white text-xl active:scale-90 transition-transform">☰</button>
+        </div>
+        
+        <div id="dropdown" class="dropdown-menu absolute top-full right-0 mt-2 w-56 bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl z-50 overflow-hidden">
+            <a href="#" onclick="openModal('usage')" class="block px-4 py-3.5 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5" data-i18n="menu_usage">Як користуватися</a>
+            <a href="#" onclick="openModal('tech')" class="block px-4 py-3.5 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5" data-i18n="menu_tech">Технологія</a>
+            <button onclick="globalReset()" class="w-full text-left px-4 py-3.5 text-xs text-red-400 hover:bg-zinc-800 font-bold uppercase tracking-wide" data-i18n="menu_reset">Reset</button>
+        </div>
+    </header>
+
+    <!-- Input Section (Slides down in Camera mode) -->
+    <div class="input-section space-y-2 mb-4 px-1">
+        <div class="relative">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-600 rounded-full"></div>
+            <textarea id="r-text" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" placeholder="RED CHANNEL"></textarea>
+        </div>
+        <div class="relative">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-600 rounded-full"></div>
+            <textarea id="g-text" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" placeholder="GREEN CHANNEL"></textarea>
+        </div>
+        <div class="relative">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+            <textarea id="b-text" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" placeholder="BLUE (PRIORITY)"></textarea>
+        </div>
+    </div>
+
+    <!-- Central Block -->
+    <div class="central-block flex-1 flex flex-col items-center justify-center relative">
+        
+        <div id="central-container" class="relative w-full max-w-xs aspect-square bg-zinc-950 rounded-3xl p-4 border border-white/5 shadow-2xl overflow-hidden">
+            <!-- Background Gradient Mesh -->
+            <div class="absolute inset-0 opacity-20 pointer-events-none" style="background: radial-gradient(circle at 20% 20%, #FF004D 0%, transparent 40%), radial-gradient(circle at 80% 80%, #0088FF 0%, transparent 40%);"></div>
+            
+            <canvas id="qr-main" width="512" height="512" class="w-full h-full transition-all duration-500 relative z-10"></canvas>
+            <video id="video" class="absolute inset-0 w-full h-full object-cover hidden z-10" playsinline></video>
+            <canvas id="freeze-frame" class="absolute inset-0 w-full h-full object-cover hidden z-12"></canvas>
+            
+            <!-- Viewfinder UI -->
+            <div class="viewfinder-corners hidden" id="viewfinder-ui">
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
             </div>
             
-            <div id="dropdown" class="dropdown-menu absolute top-full right-0 mt-2 w-56 bg-zinc-900 rounded-xl border border-white/10 shadow-2xl z-50 overflow-hidden">
-                <a href="#" onclick="openModal('usage')" class="block px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5" data-i18n="menu_usage">Як користуватися</a>
-                <a href="#" onclick="openModal('tech')" class="block px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5" data-i18n="menu_tech">Технологія</a>
-                <button onclick="globalReset()" class="w-full text-left px-4 py-3 text-xs text-red-400 hover:bg-zinc-800 font-bold uppercase tracking-wide" data-i18n="menu_reset">Reset / Очистити всё</button>
-            </div>
-        </div>
-
-        <div class="space-y-3 mb-4 w-full max-w-md">
-            <textarea id="r-text" class="w-full p-4 rounded-xl border-l-4 border-red-600 outline-none h-14 text-sm" placeholder="RED CHANNEL..."></textarea>
-            <textarea id="g-text" class="w-full p-4 rounded-xl border-l-4 border-green-600 outline-none h-14 text-sm" placeholder="GREEN CHANNEL..."></textarea>
-            <textarea id="b-text" class="w-full p-4 rounded-xl border-l-4 border-blue-600 outline-none h-14 text-sm" placeholder="BLUE (PRIORITY)..."></textarea>
-        </div>
-
-        <!-- Центральный контейнер (Визуальный порядок 2) -->
-        <div id="central-container" class="relative bg-zinc-950 rounded-[2rem] p-5 border border-white/5 shadow-2xl overflow-hidden mx-auto">
-            <canvas id="qr-main" width="512" height="512" class="w-full h-full transition-opacity duration-500"></canvas>
-            <video id="video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
-            <canvas id="freeze-frame" class="absolute inset-0 w-full h-full object-cover hidden z-10"></canvas>
-            
-            <!-- Новая рамка захвата -->
-            <div class="capture-frame-overlay">
-                <div class="bracket top-left"></div>
-                <div class="bracket top-right"></div>
-                <div class="bracket bottom-left"></div>
-                <div class="bracket bottom-right"></div>
-                <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <rect x="2" y="2" width="96" height="96" rx="6" ry="6" fill="none" stroke="#00ff41" stroke-width="1.5" class="progress-path" />
-                </svg>
-            </div>
-
             <div class="scan-line"></div>
             <div id="flash-layer" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-50"></div>
-            
-            <!-- Маленькая кнопка сохранения -->
-            <button id="save-btn" onclick="saveQR()" data-i18n="btn_save">Save PNG</button>
         </div>
 
-        <!-- Кнопки управления (Визуальный порядок 1) -->
-        <div class="btn-group-wrapper grid grid-cols-2 gap-3 w-full max-w-md mt-4 transition-transform duration-500">
-            <button onclick="startCamera()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 active:scale-95 text-[10px] uppercase tracking-widest" data-i18n="btn_camera">Open Camera</button>
-            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
-            <button onclick="triggerFileInput()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 active:scale-95 text-[10px] uppercase tracking-widest" data-i18n="btn_gallery">Open Gallery</button>
-        </div>
-
-        <div id="result-indicators" class="w-72 mt-4 space-y-2 opacity-0 transition-opacity duration-300">
-            <div id="res-r" class="p-3 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-white/5">
+        <!-- Result Indicators -->
+        <div id="result-indicators" class="w-full max-w-xs mt-4 space-y-1.5 opacity-0 transition-opacity duration-500">
+            <div id="res-r" class="p-2.5 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-white/5 backdrop-blur-sm">
                 <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter">R: Waiting...</span>
+                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter font-mono flex-1 truncate">R: —</span>
             </div>
-            <div id="res-g" class="p-3 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-white/5">
+            <div id="res-g" class="p-2.5 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-white/5 backdrop-blur-sm">
                 <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter">G: Waiting...</span>
+                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter font-mono flex-1 truncate">G: —</span>
             </div>
-            <div id="res-b" class="p-3 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-blue-500/20">
+            <div id="res-b" class="p-2.5 bg-zinc-900/60 rounded-xl flex items-center gap-3 border border-blue-500/20 backdrop-blur-sm">
                 <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-400 uppercase tracking-tighter">B: Priority Ready</span>
+                <span class="text-[10px] text-zinc-400 uppercase tracking-tighter font-mono flex-1 truncate">B: —</span>
             </div>
         </div>
     </div>
 
+    <!-- Action Buttons -->
+    <div class="mt-6 space-y-3">
+        <button id="save-btn" onclick="saveQR()" class="w-full py-4 bg-white text-black font-bold rounded-2xl hidden active:scale-95 text-sm tracking-widest uppercase shadow-lg shadow-white/20" data-i18n="btn_save">Save Result</button>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="startCamera()" class="py-3.5 bg-zinc-900 text-white font-semibold rounded-2xl border border-white/10 active:scale-95 text-xs uppercase tracking-wider flex items-center justify-center gap-2" data-i18n="btn_camera">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>Камера</span>
+            </button>
+            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
+            <button onclick="triggerFileInput()" class="py-3.5 bg-zinc-900 text-white font-semibold rounded-2xl border border-white/10 active:scale-95 text-xs uppercase tracking-wider flex items-center justify-center gap-2" data-i18n="btn_gallery">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Галерея</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal -->
     <div id="modal-overlay" class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-6">
-        <div class="modal-content w-full max-w-md bg-zinc-900/90 border border-white/10 rounded-3xl p-6 shadow-2xl relative max-h-[80vh] overflow-y-auto">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-zinc-500 hover:text-white text-xs font-bold border border-white/10 px-3 py-1 rounded-lg" data-i18n="btn_close">CLOSE</button>
+        <div class="modal-content w-full max-w-md bg-zinc-900/95 border border-white/10 rounded-3xl p-6 shadow-2xl relative max-h-[80vh] overflow-y-auto backdrop-blur-xl">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-zinc-500 hover:text-white text-xs font-bold border border-white/10 px-3 py-1 rounded-lg hover:bg-zinc-800 transition-colors" data-i18n="btn_close">CLOSE</button>
             <h2 id="modal-title" class="text-lg font-bold mb-4"></h2>
-            <div id="modal-body" class="text-sm text-zinc-300 space-y-4"></div>
+            <div id="modal-body" class="text-sm text-zinc-300 space-y-4 leading-relaxed"></div>
         </div>
     </div>
 
     <script>
+        // --- Translations & Config ---
         const translations = {
             uk: {
-                menu_usage: "Як користуватися", menu_tech: "Технологія", menu_reset: "Reset / Очистити всё",
-                btn_save: "Зберегти", btn_camera: "Камера", btn_gallery: "Галерея", btn_close: "ЗАКРИТИ",
-                ph_r: "Текст для Red...", ph_g: "Текст для Green...", ph_b: "Текст для Blue...",
-                res_wait: "Очікування...", res_fail: "[!] Не вдалося",
-                m_usage_title: "📝 Інструкція", m_usage_body: "Введіть текст у канали для створення спектрального коду або використовуйте сканер для зчитування RGB-шарів.",
-                m_tech_title: "⚙️ Технологія PRO", m_tech_body: "Використовується адаптивна бінаризація Брэдлі для стабільного зчитування при будь-якому освітленні."
+                menu_usage: "Як користуватися", menu_tech: "Технологія", menu_reset: "Скинути все",
+                btn_save: "Зберегти PNG", btn_camera: "Камера", btn_gallery: "Галерея", btn_close: "ЗАКРИТИ",
+                ph_r: "RED CHANNEL", ph_g: "GREEN CHANNEL", ph_b: "BLUE CHANNEL",
+                res_wait: "Сканування...", res_fail: "[!] Помилка",
+                m_usage_title: "📝 Інструкція", 
+                m_usage_body: "<p><b>1. Створення:</b> Введіть текст у поля R, G, B. Код сформується автоматично.</p><p><b>2. Сканування:</b> Натисніть 'Камера' та наведіть на кольоровий QR-код.</p><p><b>3. Результат:</b> Дані розподіляться по відповідних каналах.</p>",
+                m_tech_title: "⚙️ Технологія PRO", 
+                m_tech_body: "<p>Використовується адаптивна бінаризація Бредлі для стабільного зчитування при будь-якому освітленні.</p><p>Кожен колір (R,G,B) несе окремий потік даних.</p>"
             },
             en: {
-                menu_usage: "How to use", menu_tech: "Technology", menu_reset: "Reset / Clear All",
-                btn_save: "Save", btn_camera: "Camera", btn_gallery: "Gallery", btn_close: "CLOSE",
-                ph_r: "Text for Red...", ph_g: "Text for Green...", ph_b: "Text for Blue...",
-                res_wait: "Waiting...", res_fail: "[!] Failed",
-                m_usage_title: "📝 Usage", m_usage_body: "Enter text into channels to create spectral codes or use the scanner to read RGB layers.",
-                m_tech_title: "⚙️ PRO Technology", m_tech_body: "Uses adaptive Bradley thresholding for stable decoding in any lighting conditions."
+                menu_usage: "How to use", menu_tech: "Technology", menu_reset: "Reset All",
+                btn_save: "Save PNG", btn_camera: "Camera", btn_gallery: "Gallery", btn_close: "CLOSE",
+                ph_r: "RED CHANNEL", ph_g: "GREEN CHANNEL", ph_b: "BLUE CHANNEL",
+                res_wait: "Scanning...", res_fail: "[!] Failed",
+                m_usage_title: "📝 Usage", 
+                m_usage_body: "<p><b>1. Create:</b> Enter text into R, G, B fields. Code generates automatically.</p><p><b>2. Scan:</b> Tap 'Camera' and point at a color QR code.</p><p><b>3. Result:</b> Data fills into respective channels.</p>",
+                m_tech_title: "⚙️ PRO Tech", 
+                m_tech_body: "<p>Uses adaptive Bradley thresholding for stable decoding in any lighting.</p><p>Each color (R,G,B) carries a separate data stream.</p>"
             }
         };
 
+        // --- DOM Elements ---
         const els = {
             r: document.getElementById('r-text'), g: document.getElementById('g-text'), b: document.getElementById('b-text'),
             main: document.getElementById('qr-main'), mini: document.getElementById('mini-qr'),
             video: document.getElementById('video'), freeze: document.getElementById('freeze-frame'),
             centralContainer: document.getElementById('central-container'), flash: document.getElementById('flash-layer'),
             resultIndicators: document.getElementById('result-indicators'),
-            resR: document.getElementById('res-r'), resG: document.getElementById('res-g'), resB: document.getElementById('res-b')
+            resR: document.getElementById('res-r'), resG: document.getElementById('res-g'), resB: document.getElementById('res-b'),
+            viewfinder: document.getElementById('viewfinder-ui')
         };
 
         let currentLang = 'uk';
@@ -276,7 +303,9 @@
         let results = {r:null, g:null, b:null};
         let analysisReady = false;
 
-        // --- CORE LOGIC: BRADLEY THRESHOLDING ---
+        // ==========================================
+        // CORE LOGIC: BRADLEY THRESHOLDING (UNTOUCHED)
+        // ==========================================
         function applyBradley(imgData, chIdx) {
             const w = imgData.width, h = imgData.height;
             const input = imgData.data;
@@ -307,17 +336,22 @@
             return output;
         }
 
-        // --- QR GENERATION ---
+        // ==========================================
+        // QR GENERATION (UNTOUCHED CORE)
+        // ==========================================
         function generateQR() {
             const texts = [els.r.value, els.g.value, els.b.value];
             if (!texts.some(t => t.trim())) {
-                els.main.style.opacity = 0;
+                els.main.style.opacity = 0.1;
                 document.getElementById('save-btn').classList.add('hidden');
                 return;
             }
             els.main.style.opacity = 1;
             els.freeze.classList.add('hidden');
             els.video.classList.add('hidden');
+            // Reset UI state if we are typing
+            document.body.classList.remove('mode-camera');
+            els.viewfinder.classList.add('hidden');
             
             let maxVer = 1;
             texts.forEach(t => {
@@ -346,76 +380,135 @@
             });
             ctx.globalCompositeOperation = "source-over";
             document.getElementById('save-btn').classList.remove('hidden');
-            els.mini.getContext('2d').drawImage(els.main, 0, 0, 44, 44);
+            els.mini.getContext('2d').drawImage(els.main, 0, 0, 32, 32);
         }
 
-        // --- SCANNING ENGINE ---
+        // ==========================================
+        // SCANNING ENGINE (Wrapper with UI Hooks)
+        // ==========================================
         function processImageData(img, w, h, isFileScan) {
             let foundAny = false;
             [0, 1, 2].forEach(idx => {
                 const ch = ['r', 'g', 'b'][idx];
-                if (results[ch]) return;
+                if (results[ch]) return; // Skip if already found
                 const mono = applyBradley(img, idx);
                 const code = jsQR(mono, w, h, { inversionAttempts: "attemptBoth" });
                 if (code) { results[ch] = code.data; foundAny = true; }
             });
-            if(foundAny && (results.b || (results.r && results.g && results.b))) {
-                analysisReady = true;
-                if(!isFileScan) triggerCaptureSequence();
+            
+            if(foundAny) {
+                // Visual feedback for detection
+                els.viewfinder.classList.add('targeting'); 
+                
+                if(results.b || (results.r && results.g && results.b)) {
+                    analysisReady = true;
+                    if(!isFileScan) triggerCaptureSequence();
+                }
             }
             return foundAny;
         }
 
         function triggerCaptureSequence() {
             stopCamera();
+            
+            // 1. Freeze Frame
             els.freeze.width = 480; els.freeze.height = 480;
             const fctx = els.freeze.getContext('2d');
             const vw = els.video.videoWidth, vh = els.video.videoHeight;
             const s = Math.min(vw, vh);
             fctx.drawImage(els.video, (vw-s)/2, (vh-s)/2, s, s, 0, 0, 480, 480);
-            els.video.classList.add('hidden'); els.freeze.classList.remove('hidden');
-            startVisualizationSequence(true);
+            els.video.classList.add('hidden'); 
+            els.freeze.classList.remove('hidden');
+            
+            // 2. Start Visualization Sequence
+            startVisualizationSequence();
         }
 
-        function startVisualizationSequence(success) {
+        function startVisualizationSequence() {
+            // Add active scanning class
             els.centralContainer.classList.add('scan-active');
+            
+            // Play Sound
+            playSuccessSound();
+            
+            // Sequence: Scan Line runs (CSS handles 2s) -> Flash -> Show Results
             setTimeout(() => {
-                els.flash.classList.add('flash');
+                // Flash
+                els.flash.classList.add('flash-anim');
+                
                 setTimeout(() => {
-                    els.flash.classList.remove('flash');
-                    if(success) updateResultUI(); else handleFailUI();
-                }, 300);
-            }, 2500);
+                    els.flash.classList.remove('flash-anim');
+                    els.centralContainer.classList.remove('scan-active');
+                    els.viewfinder.classList.remove('targeting');
+                    updateResultUI();
+                }, 400);
+            }, 2000);
+        }
+
+        function playSuccessSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                
+                // Sci-fi descending beep
+                o.type = 'sine';
+                o.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                o.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.2); // A3
+                g.gain.setValueAtTime(0.1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                
+                o.start(ctx.currentTime);
+                o.stop(ctx.currentTime + 0.2);
+            } catch(e) { console.log("Audio error", e); }
         }
 
         function updateResultUI() {
+            els.resultIndicators.style.opacity = 1;
+            
             ['r', 'g', 'b'].forEach(ch => {
                 const el = els['res' + ch.toUpperCase()];
+                const indicator = el.querySelector('.indicator');
+                const text = el.querySelector('span');
+                
                 if(results[ch]) {
-                    el.querySelector('span').textContent = results[ch];
-                    el.querySelector('.indicator').className = 'indicator active-'+ch;
-                    el.style.opacity = 1; els[ch].value = results[ch];
-                } else { el.style.opacity = 0.3; }
+                    text.textContent = results[ch];
+                    indicator.className = 'indicator active-'+ch;
+                    el.style.opacity = 1;
+                    els[ch].value = results[ch];
+                } else {
+                    el.style.opacity = 0.4;
+                    text.textContent = translations[currentLang].res_fail;
+                }
             });
+            
+            // Generate QR from results
             generateQR();
+            
+            // Reset layout to show results
+            document.body.classList.remove('mode-camera');
         }
 
-        function handleFailUI() {
-            ['r', 'g', 'b'].forEach(ch => {
-                const el = els['res' + ch.toUpperCase()];
-                el.style.opacity = 1;
-                el.querySelector('span').textContent = translations[currentLang].res_fail;
-            });
-        }
-
-        // --- CAMERA & FILE ---
+        // --- Camera Control ---
         async function startCamera() {
-            globalReset(); prepareScannerUI();
+            globalReset();
+            document.body.classList.add('mode-camera');
+            els.viewfinder.classList.remove('hidden');
+            els.resultIndicators.style.opacity = 0.7;
+            
             try {
-                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                els.video.srcObject = s; els.video.play();
-                scanning = true; requestAnimationFrame(scanFrame);
-            } catch(e) { alert("Camera Error"); }
+                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal: 1280} } });
+                els.video.srcObject = s; 
+                els.video.play();
+                els.video.classList.remove('hidden');
+                els.main.style.opacity = 0;
+                els.freeze.classList.add('hidden');
+                
+                scanning = true; 
+                requestAnimationFrame(scanFrame);
+            } catch(e) { alert("Camera Error: " + e); }
         }
 
         function stopCamera() {
@@ -430,7 +523,12 @@
                 cv.width = 480; cv.height = 480;
                 const s = Math.min(els.video.videoWidth, els.video.videoHeight);
                 cv.getContext('2d').drawImage(els.video, (els.video.videoWidth-s)/2, (els.video.videoHeight-s)/2, s, s, 0, 0, 480, 480);
-                if(!analysisReady) processImageData(cv.getContext('2d').getImageData(0,0,480,480), 480, 480, false);
+                
+                if(!analysisReady) {
+                   const found = processImageData(cv.getContext('2d').getImageData(0,0,480,480), 480, 480, false);
+                   // Visual feedback if found something but not all
+                   if(found) els.viewfinder.classList.add('targeting');
+                }
             }
             requestAnimationFrame(scanFrame);
         }
@@ -447,18 +545,22 @@
                     const ctx = cv.getContext('2d');
                     const min = Math.min(img.width, img.height);
                     ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, s, s);
+                    
                     els.freeze.width = 480; els.freeze.height = 480;
                     els.freeze.getContext('2d').drawImage(cv, 0, 0, 480, 480);
-                    els.freeze.classList.remove('hidden'); els.video.classList.add('hidden');
+                    els.freeze.classList.remove('hidden'); 
+                    els.video.classList.add('hidden');
+                    els.main.style.opacity = 0;
+                    
                     const success = processImageData(ctx.getImageData(0,0,s,s), s, s, true);
-                    startVisualizationSequence(success);
+                    startVisualizationSequence();
                 };
                 img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        // --- UTILS ---
+        // --- Utils ---
         function setLanguage(l) {
             currentLang = l;
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -474,17 +576,23 @@
 
         function prepareScannerUI() {
             results = {r:null, g:null, b:null}; analysisReady = false;
-            els.main.style.opacity = 0; els.video.classList.remove('hidden');
-            els.resultIndicators.style.opacity = 1;
+            els.main.style.opacity = 0;
+            els.resultIndicators.style.opacity = 0;
             els.centralContainer.classList.remove('scan-active');
         }
 
         function globalReset() {
-            stopCamera(); els.r.value = ""; els.g.value = ""; els.b.value = "";
-            generateQR(); els.resultIndicators.style.opacity = 0;
+            stopCamera(); 
+            els.r.value = ""; els.g.value = ""; els.b.value = "";
+            results = {r:null, g:null, b:null}; analysisReady = false;
+            generateQR(); 
+            els.resultIndicators.style.opacity = 0;
             els.centralContainer.classList.remove('scan-active');
-            els.main.classList.remove('hidden'); els.freeze.classList.add('hidden');
+            els.main.classList.remove('hidden'); 
+            els.freeze.classList.add('hidden');
             els.video.classList.add('hidden');
+            els.viewfinder.classList.add('hidden');
+            document.body.classList.remove('mode-camera');
         }
 
         function openModal(t) {
@@ -496,9 +604,14 @@
         function triggerFileInput() { document.getElementById('file-input').click(); }
         function saveQR() { const a = document.createElement('a'); a.download = 'QRGB_PRO.png'; a.href = els.main.toDataURL(); a.click(); }
 
+        // --- Event Listeners ---
         [els.r, els.g, els.b].forEach(el => el.addEventListener('input', generateQR));
         document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('dropdown').classList.toggle('show'); };
         document.onclick = () => document.getElementById('dropdown').classList.remove('show');
+        
+        // Init
+        setLanguage('uk');
+        generateQR();
     </script>
 </body>
 </html>
